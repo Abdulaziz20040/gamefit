@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { Modal, Input, Button, Upload, message } from "antd";
+import { Modal, Input, Button, Upload, message, TimePicker } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import axios from "axios";
-import DatePicker from "react-datepicker";
+import dayjs from "dayjs";
 import "../../styles/globals.css";
 
 const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
@@ -26,14 +26,14 @@ const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
     }
   };
 
-  /** Rasm faqat image bo‘lishi kerak */
+  /** Faqat rasm yuklashga ruxsat */
   const beforeUpload = (file) => {
     const isImage = file.type.startsWith("image/");
     if (!isImage) apiMessage.error("Faqatgina rasm yuklash mumkin!");
     return isImage || Upload.LIST_IGNORE;
   };
 
-  /** Base64 -> File */
+  /** Base64 → File */
   const dataURLtoFile = (dataurl, filename) => {
     const arr = dataurl.split(",");
     const mime = arr[0].match(/:(.*?);/)[1];
@@ -55,13 +55,12 @@ const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
     localStorage.removeItem("clubImage");
   };
 
-  /** Club yaratish */
+  /** Saqlash */
   const handleSave = async () => {
     if (!club || !branch) {
       apiMessage.error("Klub nomi va filialni to‘ldiring!");
       return;
     }
-
     if (fileList.length === 0) {
       apiMessage.error("Rasm yuklang!");
       return;
@@ -78,17 +77,13 @@ const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
         return;
       }
 
-      // 1-BOSQICH: Ma'lumotlarni yuborish
+      // 1-qadam: Klub ma'lumotlarini yuborish
       const payload = {
         title: club,
         clubBranch: branch,
         description: description || "Tavsif mavjud emas",
-        startAt: startTime
-          ? startTime.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
-          : null,
-        endAt: endTime
-          ? endTime.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
-          : null,
+        startAt: startTime ? startTime.format("HH:mm") : null,
+        endAt: endTime ? endTime.format("HH:mm") : null,
       };
 
       const res = await axios.post("http://backend.gamefit.uz/game-club", payload, {
@@ -98,17 +93,17 @@ const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
         },
       });
 
-      const createdId = res.data?.id;
-      if (!createdId) {
-        apiMessage.error("Yaratilgan klub ID topilmadi!");
+      const createdClubId = res.data?.id || res.data?.gameClubId;
+      if (!createdClubId) {
+        apiMessage.error("Yaratilgan club id topilmadi!");
         return;
       }
 
-      // 2-BOSQICH: Rasm yuklash
+      // 2-qadam: Rasm yuklash
       const imageBase64 = localStorage.getItem("clubImage");
       if (imageBase64) {
         const formData = new FormData();
-        formData.append("club-id", createdId); // Postman’dagi kabi
+        formData.append("club-id", createdClubId);
         formData.append("file", dataURLtoFile(imageBase64, `club-${Date.now()}.png`));
 
         await axios.post("http://backend.gamefit.uz/file-to-club/upload", formData, {
@@ -123,9 +118,9 @@ const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
       resetForm();
       handleOk();
     } catch (err) {
-      console.error("XATOLIK: ", err.response?.data || err.message);
+      console.error("XATOLIK:", err.response?.data || err.message);
       apiMessage.error(
-        err.response?.data?.message || "❌ Xatolik yuz berdi! Qayta urinib ko‘ring."
+        err.response?.data?.message || "❌ Xatolik yuz berdi!"
       );
     } finally {
       setLoading(false);
@@ -196,27 +191,19 @@ const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
         <div>
           <label className="block text-sm text-white mb-1">Ish vaqti (ixtiyoriy)</label>
           <div className="flex gap-2">
-            <DatePicker
-              selected={startTime}
-              onChange={(date) => setStartTime(date)}
-              showTimeSelect
-              showTimeSelectOnly
-              timeIntervals={15}
-              timeCaption="Boshlanish"
-              dateFormat="HH:mm"
-              placeholderText="Boshlanish"
-              className="w-1/2 rounded-md px-2 py-1"
+            <TimePicker
+              value={startTime}
+              onChange={setStartTime}
+              format="HH:mm"
+              placeholder="Boshlanish"
+              className="w-1/2"
             />
-            <DatePicker
-              selected={endTime}
-              onChange={(date) => setEndTime(date)}
-              showTimeSelect
-              showTimeSelectOnly
-              timeIntervals={15}
-              timeCaption="Tugash"
-              dateFormat="HH:mm"
-              placeholderText="Tugash"
-              className="w-1/2 rounded-md px-2 py-1"
+            <TimePicker
+              value={endTime}
+              onChange={setEndTime}
+              format="HH:mm"
+              placeholder="Tugash"
+              className="w-1/2"
             />
           </div>
         </div>
