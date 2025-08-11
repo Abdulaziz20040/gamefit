@@ -1,0 +1,304 @@
+@import "tailwindcss";
+
+
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: #f1f6fa;
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* scrollni yashirish */
+.scroll-hidden {
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE 10+ */
+}
+
+.scroll-hidden::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari */
+}
+
+.custom-dark-modal .ant-modal-content {
+  background-color: #1E1E2E;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.custom-dark-modal .ant-modal-header {
+  background-color: #1E1E2E;
+  border-bottom: none;
+}
+
+.custom-dark-modal .ant-modal-title {
+  color: white;
+}
+
+.custom-dark-modal .ant-input,
+.custom-dark-modal .ant-picker {
+  background-color: #2A2A3B;
+  border: 1px solid #444;
+  color: white;
+}
+
+.custom-dark-modal .ant-input::placeholder {
+  color: #999;
+}
+
+.custom-dark-modal .ant-btn-primary {
+  background-color: #00BFFF;
+  border-color: #00BFFF;
+}
+
+/* ==== DARK MODAL STYLING ==== */
+
+.custom-dark-modal .ant-modal-content {
+  background-color: #1B1C22;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.custom-dark-modal .ant-modal-header {
+  background-color: #1B1C22;
+  border-bottom: none;
+}
+
+.custom-dark-modal .ant-modal-title {
+  color: white;
+}
+
+.custom-dark-modal .ant-input,
+.custom-dark-modal .ant-picker,
+.custom-dark-modal .ant-input-textarea {
+  background-color: #2A2C34;
+  border: 1px solid #444;
+  color: white;
+}
+
+.custom-dark-modal .ant-input::placeholder,
+.custom-dark-modal .ant-picker-input input::placeholder {
+  color: #888;
+}
+
+/* ==== FIX TimePicker DROPDOWN PANEL ==== */
+.custom-dark-modal .ant-picker-panel {
+  background-color: #2A2C34 !important;
+  color: white;
+}
+
+.custom-dark-modal .ant-picker-time-panel-cell-inner {
+  color: white !important;
+  font-weight: 500;
+}
+
+.custom-dark-modal .ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner {
+  background-color: #00BFFF !important;
+  color: white !important;
+  border-radius: 4px;
+}
+
+.custom-dark-modal .ant-picker-time-panel-cell:hover .ant-picker-time-panel-cell-inner {
+  background-color: #444 !important;
+  color: #fff !important;
+}
+
+/* Scrollbars in TimePicker (optional but helpful) */
+.custom-dark-modal .ant-picker-time-panel-column {
+  scrollbar-width: thin;
+}
+
+.custom-dark-modal .ant-picker-time-panel-column::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-dark-modal .ant-picker-time-panel-column::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 6px;
+}
+
+/* ==== Upload button fix ==== */
+.custom-dark-modal .ant-upload.ant-upload-select-picture-card {
+  background-color: #2A2C34;
+  border: 1px dashed #555;
+  color: #ccc;
+}
+
+.custom-dark-modal .ant-upload.ant-upload-select-picture-card:hover {
+  border-color: #00BFFF;
+  color: #00BFFF;
+}
+
+/* ==== Button Styling ==== */
+.custom-dark-modal .ant-btn-primary {
+  background-color: #00BFFF;
+  border-color: #00BFFF;
+}
+
+.no-scrollbar {
+  /* Har doim ishlashi uchun */
+  overflow: auto;
+
+  /* Chrome, Edge, Safari uchun */
+  scrollbar-width: thin;
+  /* Firefox uchun */
+  scrollbar-color: #00BFFF transparent;
+}
+
+/* Chrome, Edge, Safari uchun custom */
+.no-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  /* Scrollbar eni */
+}
+
+.no-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  /* Orqa fon shaffof */
+}
+
+.no-scrollbar::-webkit-scrollbar-thumb {
+  background: #00BFFF;
+  /* Scroll rangi */
+  border-radius: 10px;
+  /* Dumaloq qilib */
+}
+
+.no-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #00a6d6;
+  /* Hoverda biroz to‘q rang */
+}
+
+
+/* Tabs */
+.status-tab {
+  padding: 6px 18px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.status-tab.active {
+  background: #3d7bff;
+  color: #fff;
+}
+
+.status-tab.inactive {
+  background: transparent;
+  color: #ccc;
+}
+
+/* Table */
+.custom-table .ant-table {
+  background: transparent !important;
+  color: white;
+}
+
+.custom-table .ant-table-thead>tr>th {
+  background: transparent !important;
+  color: #ccc !important;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  padding: 8px 12px !important;
+}
+
+.custom-table .ant-table-tbody>tr>td {
+  background: transparent !important;
+  color: white !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  padding: 8px 12px !important;
+}
+
+.custom-table-row:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  cursor: pointer;
+}
+
+/* Avatar */
+.custom-table img {
+  display: block;
+  margin: auto;
+}
+
+/* Pagination */
+.dark-pagination .ant-pagination-item {
+  background: transparent !important;
+  border: none !important;
+}
+
+.dark-pagination .ant-pagination-item a {
+  color: white !important;
+}
+
+.dark-pagination .ant-pagination-item-active a {
+  color: #3d7bff !important;
+}
+
+.dark-pagination .ant-pagination-prev a,
+.dark-pagination .ant-pagination-next a {
+  color: #3d7bff !important;
+}
+
+/* Select */
+.dark-select .ant-select-selector {
+  background: #0f0f1a !important;
+  color: white !important;
+  border: none !important;
+  height: 36px !important;
+}
+
+/* DatePicker */
+.ant-picker {
+  background: #0f0f1a !important;
+  border: none !important;
+  color: white !important;
+  height: 36px !important;
+  border-radius: 8px !important;
+}
+
+.ant-picker-input>input {
+  color: white !important;
+}
+
+.ant-picker-suffix {
+  color: #999 !important;
+}
+
+/* Search input */
+.ant-input {
+  background: #0f0f1a !important;
+  color: white !important;
+  border: none !important;
+  height: 36px !important;
+  border-radius: 8px !important;
+}
+
+textarea {
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+textarea::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari, Edge */
+}
