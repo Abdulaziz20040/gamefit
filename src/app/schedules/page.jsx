@@ -255,9 +255,15 @@ export default function Page() {
           }}
           rowClassName={() => "custom-table-row"}
           className="custom-table pt-5"
+          // jadvaldagi onRow (sening oldingi kod ichida shu joyni topib almashtir)
           onRow={(record) => ({
-            onClick: () => router.push(`/schedules/${record.token}`),
+            onClick: () => {
+              console.log("Navigate subToken:", record.token);
+              router.push(`/schedules/${encodeURIComponent(record.token)}`);
+            },
           })}
+
+
         />
 
         {/* Pagination */}

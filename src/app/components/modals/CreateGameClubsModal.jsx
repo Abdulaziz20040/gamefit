@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { Modal, Input, Button, Upload, message, TimePicker } from "antd";
+import { Modal, Input, Button, Upload, message } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import axios from "axios";
-import dayjs from "dayjs";
 import "../../styles/globals.css";
 
 const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
@@ -10,8 +9,8 @@ const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
   const [club, setClub] = useState("");
   const [description, setDescription] = useState("");
   const [branch, setBranch] = useState("");
-  const [startTime, setStartTime] = useState(null);
-  const [endTime, setEndTime] = useState(null);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [loading, setLoading] = useState(false);
 
   const [apiMessage, contextHolder] = message.useMessage();
@@ -23,6 +22,8 @@ const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
       const reader = new FileReader();
       reader.onload = () => localStorage.setItem("clubImage", reader.result);
       reader.readAsDataURL(newFileList[0].originFileObj);
+    } else {
+      localStorage.removeItem("clubImage");
     }
   };
 
@@ -49,74 +50,143 @@ const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
     setClub("");
     setDescription("");
     setBranch("");
-    setStartTime(null);
-    setEndTime(null);
+    setStartTime("");
+    setEndTime("");
     setFileList([]);
     localStorage.removeItem("clubImage");
   };
 
+  /** Vaqt formatini tekshirish va to'g'rilash */
+  const formatTime = (time) => {
+    if (!time || !time.trim()) return "";
+
+    const cleanTime = time.trim();
+    const timeRegex = /^([0-9]{1,2}):([0-9]{1,2})$/;
+    const match = cleanTime.match(timeRegex);
+
+    if (!match) return null;
+
+    const hours = parseInt(match[1]);
+    const minutes = parseInt(match[2]);
+
+    if (hours > 23 || minutes > 59) return null;
+
+    // 2 xonali formatga o'tkazish
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  };
+
   /** Saqlash */
   const handleSave = async () => {
-    if (!club || !branch) {
-      apiMessage.error("Klub nomi va filialni to‘ldiring!");
+    // Majburiy maydonlarni tekshirish
+    if (!club.trim() || !branch.trim()) {
+      apiMessage.error("Klub nomi va filialni to'ldiring!");
       return;
     }
+
     if (fileList.length === 0) {
       apiMessage.error("Rasm yuklang!");
       return;
+    }
+
+    // Vaqtni tekshirish va formatga o'tkazish
+    let formattedStartTime = "";
+    let formattedEndTime = "";
+
+    if (startTime.trim()) {
+      formattedStartTime = formatTime(startTime);
+      if (formattedStartTime === null) {
+        apiMessage.error("Boshlanish vaqtini to'g'ri formatda kiriting (masalan: 10:00)");
+        return;
+      }
+    }
+
+    if (endTime.trim()) {
+      formattedEndTime = formatTime(endTime);
+      if (formattedEndTime === null) {
+        apiMessage.error("Tugash vaqtini to'g'ri formatda kiriting (masalan: 18:00)");
+        return;
+      }
     }
 
     try {
       setLoading(true);
 
       const token = localStorage.getItem("accessToken");
-      const clubId = localStorage.getItem("clubId");
-
-      if (!token || !clubId) {
-        apiMessage.error("Token yoki clubId topilmadi!");
+      if (!token) {
+        apiMessage.error("Token topilmadi!");
         return;
       }
 
-      // 1-qadam: Klub ma'lumotlarini yuborish
+      // Yuboriladigan ma'lumot
       const payload = {
-        title: club,
-        clubBranch: branch,
-        description: description || "Tavsif mavjud emas",
-        startAt: startTime ? startTime.format("HH:mm") : null,
-        endAt: endTime ? endTime.format("HH:mm") : null,
+        title: club.trim(),
+        clubBranch: branch.trim(),
+        description: description.trim() || "Tavsif mavjud emas",
       };
 
-      const res = await axios.post("http://backend.gamefit.uz/game-club", payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "x-club-id": clubId,
-        },
-      });
+      // Vaqtlarni qo'shish (agar mavjud bo'lsa)
+      if (formattedStartTime) {
+        payload.startAt = formattedStartTime;
+      }
+      if (formattedEndTime) {
+        payload.endAt = formattedEndTime;
+      }
 
-      const createdClubId = res.data?.id || res.data?.gameClubId;
+      console.log("Yuborilayotgan ma'lumot:", payload);
+
+      // Klub yaratish API chaqiruvi
+      const res = await axios.post(
+        "http://backend.gamefit.uz/game-club",
+        payload,
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("API javobi:", res.data);
+
+      // Yaratilgan klub ID olish
+      const createdClubId = res.data?.content?.id;
       if (!createdClubId) {
-        apiMessage.error("Yaratilgan club id topilmadi!");
+        apiMessage.error("Yaratilgan klub ID topilmadi!");
         return;
       }
 
-      // 2-qadam: Rasm yuklash
+      console.log("Yaratilgan klub ID:", createdClubId);
+
+      // Rasm yuklash
       const imageBase64 = localStorage.getItem("clubImage");
       if (imageBase64) {
         const formData = new FormData();
-        formData.append("club-id", createdClubId);
-        formData.append("file", dataURLtoFile(imageBase64, `club-${Date.now()}.png`));
+        formData.append("club-id", createdClubId.toString());
+        formData.append(
+          "file",
+          dataURLtoFile(imageBase64, `club-${Date.now()}.png`)
+        );
 
-        await axios.post("http://backend.gamefit.uz/file-to-club/upload", formData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        });
+        console.log("Rasm yuklash uchun FormData:", formData.get("club-id"));
+
+        const uploadResponse = await axios.post(
+          "http://backend.gamefit.uz/file-to-club/upload",
+          formData,
+          {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        console.log("Rasm yuklash javobi:", uploadResponse.data);
       }
 
       apiMessage.success("✅ Klub muvaffaqiyatli yaratildi!");
       resetForm();
       handleOk();
+
     } catch (err) {
       console.error("XATOLIK:", err.response?.data || err.message);
       apiMessage.error(
@@ -159,7 +229,7 @@ const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
 
         {/* Klub nomi */}
         <div>
-          <label className="block text-sm text-white mb-1">Klub nomi</label>
+          <label className="block text-sm text-white mb-1">Klub nomi *</label>
           <Input
             value={club}
             onChange={(e) => setClub(e.target.value)}
@@ -169,6 +239,7 @@ const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
 
         {/* Tavsif */}
         <div>
+          <label className="block text-sm text-white mb-1">Tavsif</label>
           <Input.TextArea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -179,7 +250,7 @@ const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
 
         {/* Filial */}
         <div>
-          <label className="block text-sm text-white mb-1">Filial</label>
+          <label className="block text-sm text-white mb-1">Filial *</label>
           <Input
             value={branch}
             onChange={(e) => setBranch(e.target.value)}
@@ -191,20 +262,21 @@ const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
         <div>
           <label className="block text-sm text-white mb-1">Ish vaqti (ixtiyoriy)</label>
           <div className="flex gap-2">
-            <TimePicker
+            <Input
               value={startTime}
-              onChange={setStartTime}
-              format="HH:mm"
-              placeholder="Boshlanish"
+              onChange={(e) => setStartTime(e.target.value)}
+              placeholder="Boshlanish (masalan: 10:00)"
               className="w-1/2"
             />
-            <TimePicker
+            <Input
               value={endTime}
-              onChange={setEndTime}
-              format="HH:mm"
-              placeholder="Tugash"
+              onChange={(e) => setEndTime(e.target.value)}
+              placeholder="Tugash (masalan: 18:00)"
               className="w-1/2"
             />
+          </div>
+          <div className="text-xs text-gray-400 mt-1">
+            Vaqtni HH:MM formatida kiriting (masalan: 09:30, 18:00)
           </div>
         </div>
 
