@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { DatePicker } from "antd";
 import dayjs from "dayjs";
 
-export default function AccountTab({ inputStyle, clubId }) {
+export default function AccountTab({ inputStyle, clubId, language }) {
     const [username, setUsername] = useState("");
     const [fullName, setFullName] = useState("");
     const [password, setPassword] = useState("");
@@ -14,19 +14,76 @@ export default function AccountTab({ inputStyle, clubId }) {
     const [isExisting, setIsExisting] = useState(false);
     const [fetching, setFetching] = useState(true);
 
+    // 🌍 Tarjima matnlari
+    const translations = {
+        ru: {
+            username: "Пользователь",
+            fullName: "Имя",
+            password: "Пароль",
+            selectDate: "Выберите дату",
+            status: "Статус",
+            active: "Актив",
+            inactive: "Неактив",
+            save: "Сохранить",
+            saving: "Сохраняется...",
+            fillAll: "Заполните все поля!",
+            success: "✅ Аккаунт успешно создан!",
+            duplicate: "❌ Этот username уже существует!",
+            error: "❌ Ошибка сохранения",
+            checking: "⏳ Проверка...",
+        },
+        uz: {
+            username: "Foydalanuvchi",
+            fullName: "Ism",
+            password: "Parol",
+            selectDate: "Sanani tanlang",
+            status: "Holat",
+            active: "Faol",
+            inactive: "Faol emas",
+            save: "Saqlash",
+            saving: "Saqlanmoqda...",
+            fillAll: "Barcha maydonlarni to‘ldiring!",
+            success: "✅ Akkaunt muvaffaqiyatli yaratildi!",
+            duplicate: "❌ Bu username allaqachon mavjud!",
+            error: "❌ Saqlashda xatolik",
+            checking: "⏳ Tekshirilmoqda...",
+        },
+        en: {
+            username: "Username",
+            fullName: "Full Name",
+            password: "Password",
+            selectDate: "Select Date",
+            status: "Status",
+            active: "Active",
+            inactive: "Inactive",
+            save: "Save",
+            saving: "Saving...",
+            fillAll: "Please fill all fields!",
+            success: "✅ Account created successfully!",
+            duplicate: "❌ This username already exists!",
+            error: "❌ Error while saving",
+            checking: "⏳ Checking...",
+        },
+    };
+
+    const t = translations[language] || translations.ru;
+
     // 🔄 Ma'lumotlarni yuklab olish
     useEffect(() => {
         const fetchAccount = async () => {
             if (!clubId) return;
             setFetching(true);
             try {
-                const res = await fetch(`http://backend.gamefit.uz/club-account/by-club-id?clubId=${clubId}`, {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-                    },
-                });
+                const res = await fetch(
+                    `http://backend.gamefit.uz/club-account/by-club-id?clubId=${clubId}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+                        },
+                    }
+                );
 
                 const data = await res.json();
                 console.log("📥 Kelgan ma'lumot:", data);
@@ -55,7 +112,7 @@ export default function AccountTab({ inputStyle, clubId }) {
     // 📝 Akkaunt saqlash
     const handleSave = async () => {
         if (!username || !fullName || !password || !date) {
-            alert("Barcha maydonlarni to‘ldiring!");
+            alert(t.fillAll);
             return;
         }
 
@@ -85,33 +142,31 @@ export default function AccountTab({ inputStyle, clubId }) {
             console.log("✅ Yuborilgan javob:", data);
 
             if (res.ok) {
-                alert("✅ Akkaunt muvaffaqiyatli yaratildi!");
+                alert(t.success);
                 setPassword("");
                 setIsExisting(true);
             } else {
                 if (data.message === "Account already exists") {
-                    alert("❌ Bu username allaqachon mavjud!");
+                    alert(t.duplicate);
                 } else {
-                    alert(`❌ Xatolik: ${data.message || "Noma'lum muammo"}`);
+                    alert(`${t.error}: ${data.message || "Unknown error"}`);
                 }
             }
         } catch (error) {
             console.error("❌ POST xatosi:", error);
-            alert("❌ Ulanishda xatolik!");
+            alert(t.error);
         } finally {
             setLoading(false);
         }
     };
 
-    if (fetching) return <div style={{ color: "#aaa" }}>⏳ Tekshirilmoqda...</div>;
+    if (fetching) return <div style={{ color: "#aaa" }}>{t.checking}</div>;
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-
-
             <input
                 type="text"
-                placeholder="Пользователь"
+                placeholder={t.username}
                 style={inputStyle}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -120,7 +175,7 @@ export default function AccountTab({ inputStyle, clubId }) {
 
             <input
                 type="text"
-                placeholder="Имя"
+                placeholder={t.fullName}
                 style={inputStyle}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
@@ -129,7 +184,7 @@ export default function AccountTab({ inputStyle, clubId }) {
 
             <input
                 type="password"
-                placeholder="Пароль"
+                placeholder={t.password}
                 style={inputStyle}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -138,7 +193,7 @@ export default function AccountTab({ inputStyle, clubId }) {
 
             <DatePicker
                 style={inputStyle}
-                placeholder="Сана танланг"
+                placeholder={t.selectDate}
                 format="YYYY-MM-DD"
                 value={date}
                 onChange={(val) => setDate(val)}
@@ -146,8 +201,15 @@ export default function AccountTab({ inputStyle, clubId }) {
             />
 
             {/* Status toggle */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px" }}>
-                <span style={{ fontSize: "14px", color: "#ccc" }}>Статус</span>
+            <div
+                style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginTop: "10px",
+                }}
+            >
+                <span style={{ fontSize: "14px", color: "#ccc" }}>{t.status}</span>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <span
                         style={{
@@ -156,7 +218,7 @@ export default function AccountTab({ inputStyle, clubId }) {
                             color: status ? "#4caf50" : "#f44336",
                         }}
                     >
-                        {status ? "Актив" : "Неактив"}
+                        {status ? t.active : t.inactive}
                     </span>
                     <div
                         onClick={() => !isExisting && setStatus(!status)}
@@ -201,7 +263,7 @@ export default function AccountTab({ inputStyle, clubId }) {
                         cursor: "pointer",
                     }}
                 >
-                    {loading ? "Saqlanmoqda..." : "Saqlash"}
+                    {loading ? t.saving : t.save}
                 </button>
             )}
         </div>

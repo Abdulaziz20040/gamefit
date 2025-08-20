@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Modal, Input, Button, Upload, message } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import axios from "axios";
 import "../../styles/globals.css";
+import axiosInstance from "@/app/utils/axiosInstance";
 
 const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
   const [fileList, setFileList] = useState([]);
@@ -135,7 +135,7 @@ const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
       console.log("Yuborilayotgan ma'lumot:", payload);
 
       // Klub yaratish API chaqiruvi
-      const res = await axios.post(
+      const res = await axiosInstance.post(
         "http://backend.gamefit.uz/game-club",
         payload,
         {
@@ -169,7 +169,7 @@ const CreateGameClubModal = ({ isModalOpen, handleOk, handleCancel }) => {
 
         console.log("Rasm yuklash uchun FormData:", formData.get("club-id"));
 
-        const uploadResponse = await axios.post(
+        const uploadResponse = await axiosInstance.post(
           "http://backend.gamefit.uz/file-to-club/upload",
           formData,
           {

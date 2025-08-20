@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { FaCrown, FaFire, FaStar } from "react-icons/fa";
 import SeatConfirmModal from "../components/modals/BookingModal";
+import { useLanguage } from "../context/LanguageContext"; // 🔑 til context
+import CustomCalendar from "../components/CustomCalendar";
 
 // O‘rindiq rasmlari
 const img = {
@@ -37,17 +39,38 @@ export default function CinemaBooking() {
       ? localStorage.getItem("accessToken") || ""
       : "";
 
-  const tabs = [
-    { index: 0, name: "Standart", icon: <FaFire /> },
-    { index: 1, name: "Premium", icon: <FaStar /> },
-    { index: 2, name: "VIP", icon: <FaCrown /> },
-  ];
+  // 🔑 til konteksti
+  const { language } = useLanguage();
+
+  // 🔑 tarjimalar
+  const translations = {
+    date: { uz: "Sana", ru: "Дата", en: "Date" },
+    start: { uz: "Boshlanish", ru: "Начало", en: "Start" },
+    end: { uz: "Tugash", ru: "Конец", en: "End" },
+    loading: { uz: "Yuklanmoqda...", ru: "Загрузка...", en: "Loading..." },
+    notFound: {
+      uz: "O‘rindiqlar topilmadi",
+      ru: "Места не найдены",
+      en: "Seats not found",
+    },
+    selectedSeats: {
+      uz: "Tanlangan o‘rindiqlar",
+      ru: "Выбранные места",
+      en: "Selected seats",
+    },
+    continue: { uz: "Davom etish", ru: "Продолжить", en: "Continue" },
+    tabs: {
+      uz: ["Standart", "Premium", "VIP"],
+      ru: ["Стандарт", "Премиум", "VIP"],
+      en: ["Standard", "Premium", "VIP"],
+    },
+  };
 
   // API orqali o‘rindiqlarni olish
   const fetchSeatsData = async () => {
     setLoading(true);
     try {
-      const url = `http://backend.gamefit.uz/club-seat/by-active-seat?clubId=${clubId}&date=${selectedDate}&startAt=${startTime}&endAt=${endTime}&serviceNameIndex=${activeTab}`;
+      const url = `http://backend.gamefit.uz/club-seat/by-active-seat?clubId=${clubId}&date=${selectedDate}&startAt=${startTime}&endAt=${endTime}&serviceNameIndex=${activeTab}&lang=${language}`;
       const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -77,7 +100,7 @@ export default function CinemaBooking() {
 
   useEffect(() => {
     fetchSeatsData();
-  }, [selectedDate, startTime, endTime, activeTab]);
+  }, [selectedDate, startTime, endTime, activeTab, language]); // 🔑 til o‘zgarsa qayta fetch bo‘lsin
 
   const handleSeatClick = (seatId, isAvailable) => {
     if (!isAvailable) return;
@@ -98,69 +121,69 @@ export default function CinemaBooking() {
   return (
     <div className="text-white flex flex-col">
       {/* Header */}
+      {/* Header */}
       <header className="px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-4 relative">
-          {/* Sana, vaqt tanlash */}
-          <div className="flex flex-col gap-2 absolute left-0 top-10">
-            <div className="flex items-center gap-4 flex-wrap">
-              <label className="text-gray-400 text-sm flex flex-col">
-                Sana:
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-1 text-white text-sm mt-1"
-                  max={today}
-                />
-              </label>
-              <label className="text-gray-400 text-sm flex flex-col">
-                Boshlanish:
-                <input
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-1 text-white text-sm mt-1"
-                />
-              </label>
-              <label className="text-gray-400 text-sm flex flex-col">
-                Tugash:
-                <input
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-1 text-white text-sm mt-1"
-                />
-              </label>
-            </div>
+        <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-4">
+          {/* Sana va vaqt tanlash */}
+          {/* Sana va vaqt tanlash */}
+          <CustomCalendar
+            translations={translations}
+            language={language}
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+            startTime={startTime}
+            setStartTime={setStartTime}
+            endTime={endTime}
+            setEndTime={setEndTime}
+          />
+
+
+
+          {/* Tablar (o‘ng tomonda) */}
+          <div className="flex gap-4">
+            {[0, 1, 2].map((idx) => {
+              const images = [
+                { active: "/wtab3.png", inactive: "tab2.png" },
+                { active: "wtab1.png", inactive: "tab1.png" },
+                { active: "wtab2.png", inactive: "tab3.png" },
+              ];
+
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setActiveTab(idx)}
+                  className={`flex items-center gap-2 cursor-pointer px-6 py-2 rounded-lg font-semibold text-sm transition-colors ${activeTab === idx
+                    ? "bg-cyan-500 text-white"
+                    : "bg-[#0C0C14] text-[#4A4C56] hover:bg-[#0f0f1abb]"
+                    }`}
+                >
+                  <span className="w-5 h-5">
+                    <img
+                      src={activeTab === idx ? images[idx].active : images[idx].inactive}
+                      alt={`tab-${idx}`}
+                      className="w-5 h-5 object-contain"
+                    />
+                  </span>
+                  {translations.tabs[language][idx]}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Tablar */}
-          <div className="flex gap-4 mx-auto">
-            {tabs.map((tab) => (
-              <button
-                key={tab.index}
-                onClick={() => setActiveTab(tab.index)}
-                className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-sm transition-colors ${activeTab === tab.index
-                  ? "bg-cyan-500 text-white"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                  }`}
-              >
-                <span className="text-lg">{tab.icon}</span>
-                {tab.name}
-              </button>
-            ))}
-          </div>
         </div>
       </header>
 
+
       {/* Main */}
-      <main className="flex-grow max-w-7xl overflow-y-auto mt-14 no-scrollbar h-[70vh] py-10 mx-auto w-full">
+      <main className="flex-grow max-w-7xl overflow-y-auto mt-14 no-scrollbar h-[70vh] mx-auto w-full">
         {loading ? (
           <div className="flex justify-center items-center h-64 text-gray-400">
-            Yuklanmoqda...
+            {translations.loading[language]}
           </div>
         ) : seatsData.length === 0 ? (
-          <div className="text-center text-gray-400">O'rindiqlar topilmadi</div>
+          <div className="text-center text-gray-400">
+            {translations.notFound[language]}
+          </div>
         ) : (
           <div className="grid grid-cols-4 gap-6">
             {Array.from({ length: Math.ceil(seatsData.length / 10) }).map(
@@ -176,7 +199,7 @@ export default function CinemaBooking() {
                   <div key={groupIndex} className="flex flex-col items-center">
                     {activeTab !== 0 && (
                       <div className="mb-3 px-4 py-1 border border-cyan-500 rounded-md text-cyan-400 font-semibold text-sm">
-                        {tabs[activeTab].name}-{groupIndex + 1}
+                        {translations.tabs[language][activeTab]}-{groupIndex + 1}
                       </div>
                     )}
 
@@ -240,7 +263,9 @@ export default function CinemaBooking() {
         {/* Tanlangan o‘rindiqlar paneli */}
         {pendingSeats.length > 0 && (
           <div className="fixed bottom-6 right-6 bg-gray-800 rounded-lg p-4 border border-gray-700 shadow-xl w-52">
-            <h3 className="font-semibold text-sm mb-2">Tanlangan o'rindiqlar:</h3>
+            <h3 className="font-semibold text-sm mb-2">
+              {translations.selectedSeats[language]}:
+            </h3>
             <div className="flex flex-wrap gap-1 mb-3 max-h-24 overflow-y-auto">
               {pendingSeats.map((id) => {
                 const seat = seatsData.find((s) => s.id === id);
@@ -258,7 +283,7 @@ export default function CinemaBooking() {
               onClick={() => setIsModalOpen(true)}
               className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-semibold px-4 py-2 rounded"
             >
-              Davom etish ({pendingSeats.length})
+              {translations.continue[language]} ({pendingSeats.length})
             </button>
           </div>
         )}

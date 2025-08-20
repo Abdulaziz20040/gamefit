@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { DatePicker, TimePicker, message } from "antd";
 import dayjs from "dayjs";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 export default function SeatConfirmModal({
   isOpen,
@@ -12,7 +13,7 @@ export default function SeatConfirmModal({
   endTime,
   clubId,
   activeTab,
-  onSuccess
+  onSuccess,
 }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -20,68 +21,138 @@ export default function SeatConfirmModal({
   const [totalPrice, setTotalPrice] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const accessToken = typeof window !== "undefined" ? localStorage.getItem("accessToken") || "" : "";
+  // ✅ Tilni contextdan olamiz
+  const { language } = useLanguage();
+
+  const translations = {
+    uz: {
+      booking: "Bron qilish",
+      seats: "Joylar",
+      date: "Sana",
+      start: "Boshlanishi",
+      end: "Tugashi",
+      firstName: "Ism",
+      lastName: "Familiya",
+      phone: "Telefon",
+      price: "Narx",
+      cancel: "Bekor qilish",
+      save: "Saqlash",
+      saving: "Saqlanmoqda...",
+      success: "Bron muvaffaqiyatli saqlandi!",
+      errorFill: "Barcha maydonlarni to'ldiring!",
+      errorSave: "Bron qilishda xatolik",
+    },
+    ru: {
+      booking: "Бронирование",
+      seats: "Места",
+      date: "Дата",
+      start: "Начало",
+      end: "Окончание",
+      firstName: "Имя",
+      lastName: "Фамилия",
+      phone: "Телефон",
+      price: "Цена",
+      cancel: "Отмена",
+      save: "Сохранить",
+      saving: "Сохраняется...",
+      success: "Брон успешно сохранён!",
+      errorFill: "Заполните все поля!",
+      errorSave: "Ошибка при бронировании",
+    },
+    en: {
+      booking: "Booking",
+      seats: "Seats",
+      date: "Date",
+      start: "Start",
+      end: "End",
+      firstName: "First Name",
+      lastName: "Last Name",
+      phone: "Phone",
+      price: "Price",
+      cancel: "Cancel",
+      save: "Save",
+      saving: "Saving...",
+      success: "Booking saved successfully!",
+      errorFill: "Please fill in all fields!",
+      errorSave: "Error while booking",
+    },
+  };
+
+  const t = translations[language] || translations.uz;
+
+  const accessToken =
+    typeof window !== "undefined"
+      ? localStorage.getItem("accessToken") || ""
+      : "";
 
   if (!isOpen) return null;
 
   const handleSave = async () => {
     if (!firstName || !lastName || !phoneNumber || !totalPrice) {
-      message.error("Barcha maydonlarni to'ldiring!");
+      message.error(t.errorFill);
       return;
     }
 
     setLoading(true);
     try {
-      // 1️⃣ Avval foydalanuvchini yaratamiz
-      const userRes = await fetch("http://backend.gamefit.uz/club-users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({
-          clubId: Number(clubId),
-          firstName,
-          lastName,
-          phoneNumber
-        })
-      });
+      // 1️⃣ Foydalanuvchi yaratish
+      const userRes = await fetch(
+        `http://backend.gamefit.uz/club-users?lang=${language}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            clubId: Number(clubId),
+            firstName,
+            lastName,
+            phoneNumber,
+          }),
+        }
+      );
 
       const userData = await userRes.json();
-      if (!userRes.ok || !userData.success) throw new Error(userData.message || "Foydalanuvchi qo'shilmadi");
+      if (!userRes.ok || !userData.success)
+        throw new Error(userData.message || "Foydalanuvchi qo'shilmadi");
 
       const userId = userData.content.id;
 
-      // 2️⃣ Endi subscription yaratamiz
-      const subRes = await fetch("http://backend.gamefit.uz/subscription", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({
-          userId,
-          clubId: Number(clubId),
-          date,
-          startAt: startTime,
-          endAt: endTime,
-          seatNumbers: selectedSeats, // [6,7,8...]
-          serviceNameIndex: activeTab,
-          totalPrice: Number(totalPrice),
-          gamerCount: selectedSeats.length,
-          sessionType: 1
-        })
-      });
+      // 2️⃣ Subscription yaratish
+      const subRes = await fetch(
+        `http://backend.gamefit.uz/subscription?lang=${language}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            userId,
+            clubId: Number(clubId),
+            date,
+            startAt: startTime,
+            endAt: endTime,
+            seatNumbers: selectedSeats,
+            serviceNameIndex: activeTab,
+            totalPrice: Number(totalPrice),
+            gamerCount: selectedSeats.length,
+            sessionType: 1,
+          }),
+        }
+      );
 
       const subData = await subRes.json();
-      if (!subRes.ok || !subData.success) throw new Error(subData.message || "Bron qilishda xatolik");
+      if (!subRes.ok || !subData.success)
+        throw new Error(subData.message || t.errorSave);
 
-      message.success("Bron muvaffaqiyatli saqlandi!");
+      message.success(t.success);
       onSuccess?.();
       onCancel();
     } catch (err) {
       console.error(err);
-      message.error(err.message || "Xatolik yuz berdi");
+      message.error(err.message || t.errorSave);
     } finally {
       setLoading(false);
     }
@@ -90,18 +161,25 @@ export default function SeatConfirmModal({
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
       <div className="bg-[#0E0F1A] text-white rounded-xl px-8 py-6 w-[420px] shadow-xl border border-white/10">
-        <h2 className="text-white font-semibold text-xl mb-3">Бронирование</h2>
+        <h2 className="text-white font-semibold text-xl mb-3">{t.booking}</h2>
 
         {/* Joylar */}
         <div className="flex items-center gap-3 mb-5">
-          <img src="/seat-icon.png" alt="seat" className="w-8 h-8 object-contain" />
-          <span className="text-cyan-400 font-medium">{selectedSeats.join(", ")}</span>
+          <img
+            src="/seat-icon.png"
+            alt="seat"
+            className="w-8 h-8 object-contain"
+          />
+          <span className="text-cyan-400 font-medium">
+            {selectedSeats.join(", ")}
+          </span>
         </div>
 
         {/* Sana */}
         <div className="mb-4">
-          <label className="block text-sm mb-1">Дата</label>
-          <DatePicker className="w-full bg-transparent border border-white/20 text-white rounded-md"
+          <label className="block text-sm mb-1">{t.date}</label>
+          <DatePicker
+            className="w-full bg-transparent border border-white/20 text-white rounded-md"
             format="YYYY-MM-DD"
             value={date ? dayjs(date) : null}
             disabled
@@ -111,16 +189,18 @@ export default function SeatConfirmModal({
         {/* Vaqtlar */}
         <div className="flex gap-3 mb-4">
           <div className="flex-1">
-            <label className="block text-sm mb-1">Начало</label>
-            <TimePicker className="w-full bg-transparent border border-white/20 text-white rounded-md"
+            <label className="block text-sm mb-1">{t.start}</label>
+            <TimePicker
+              className="w-full bg-transparent border border-white/20 text-white rounded-md"
               format="HH:mm"
               value={startTime ? dayjs(startTime, "HH:mm") : null}
               disabled
             />
           </div>
           <div className="flex-1">
-            <label className="block text-sm mb-1">Окончание</label>
-            <TimePicker className="w-full bg-transparent border border-white/20 text-white rounded-md"
+            <label className="block text-sm mb-1">{t.end}</label>
+            <TimePicker
+              className="w-full bg-transparent border border-white/20 text-white rounded-md"
               format="HH:mm"
               value={endTime ? dayjs(endTime, "HH:mm") : null}
               disabled
@@ -130,35 +210,60 @@ export default function SeatConfirmModal({
 
         {/* Foydalanuvchi ma'lumotlari */}
         <div className="mb-4">
-          <label className="block text-sm mb-1">Имя</label>
-          <input className="w-full bg-transparent border border-white/20 text-white rounded-md px-3 py-2"
-            value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Abdurahmon" />
+          <label className="block text-sm mb-1">{t.firstName}</label>
+          <input
+            className="w-full bg-transparent border border-white/20 text-white rounded-md px-3 py-2"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            placeholder="Abdurahmon"
+          />
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm mb-1">Фамилия</label>
-          <input className="w-full bg-transparent border border-white/20 text-white rounded-md px-3 py-2"
-            value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Eshmatov" />
+          <label className="block text-sm mb-1">{t.lastName}</label>
+          <input
+            className="w-full bg-transparent border border-white/20 text-white rounded-md px-3 py-2"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="Eshmatov"
+          />
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm mb-1">Телефон</label>
-          <input className="w-full bg-transparent border border-white/20 text-white rounded-md px-3 py-2"
-            value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} placeholder="+998 90 123 45 67" />
+          <label className="block text-sm mb-1">{t.phone}</label>
+          <input
+            className="w-full bg-transparent border border-white/20 text-white rounded-md px-3 py-2"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            placeholder="+998 90 123 45 67"
+          />
         </div>
 
         <div className="mb-6">
-          <label className="block text-sm mb-1">Цена</label>
-          <input type="number" className="w-full bg-transparent border border-white/20 text-white rounded-md px-3 py-2"
-            value={totalPrice} onChange={e => setTotalPrice(e.target.value)} placeholder="100000" />
+          <label className="block text-sm mb-1">{t.price}</label>
+          <input
+            type="number"
+            className="w-full bg-transparent border border-white/20 text-white rounded-md px-3 py-2"
+            value={totalPrice}
+            onChange={(e) => setTotalPrice(e.target.value)}
+            placeholder="100000"
+          />
         </div>
 
         {/* Tugmalar */}
         <div className="flex justify-end gap-4">
-          <button onClick={onCancel} className="border border-white/20 text-white px-5 py-2 rounded-md hover:bg-white/10">Отмена</button>
-          <button onClick={handleSave} disabled={loading}
-            className="bg-cyan-500 hover:bg-cyan-600 text-white px-5 py-2 rounded-md">
-            {loading ? "Saqlanmoqda..." : "Сохранить"}
+          <button
+            onClick={onCancel}
+            className="border border-white/20 text-white px-5 py-2 rounded-md hover:bg-white/10"
+          >
+            {t.cancel}
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            className="bg-cyan-500 hover:bg-cyan-600 text-white px-5 py-2 rounded-md"
+          >
+            {loading ? t.saving : t.save}
           </button>
         </div>
       </div>

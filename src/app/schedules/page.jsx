@@ -18,6 +18,7 @@ import "antd/dist/reset.css";
 import "../styles/globals.css";
 import { useRouter } from "next/navigation";
 import "../../app/styles/globals.css";
+import { useLanguage } from "../context/LanguageContext"; // 🔑 qo‘shildi
 
 const { Option } = Select;
 
@@ -34,6 +35,34 @@ const getStatusColor = (index) => {
   }
 };
 
+// 🔑 Tilga qarab matnlar
+const labelsByLang = {
+  ru: {
+    title: "График",
+    tabs: ["Успешно", "Истек срок", "Заблокировано"],
+    search: "Поиск токен или имя",
+    empty: "Нет данных",
+    rows: "Количество строк",
+    next: "Далее",
+  },
+  uz: {
+    title: "Jadval",
+    tabs: ["Muvaffaqiyatli", "Muddati o‘tgan", "Bloklangan"],
+    search: "Token yoki ism qidirish",
+    empty: "Ma'lumot yo‘q",
+    rows: "Qatorlar soni",
+    next: "Keyingi",
+  },
+  en: {
+    title: "Schedules",
+    tabs: ["Success", "Expired", "Blocked"],
+    search: "Search token or name",
+    empty: "No data",
+    rows: "Rows per page",
+    next: "Next",
+  },
+};
+
 export default function Page() {
   const [activeTab, setActiveTab] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
@@ -45,6 +74,8 @@ export default function Page() {
   const [selectedDate, setSelectedDate] = useState(dayjs());
 
   const router = useRouter();
+  const { language } = useLanguage(); // 🔑 til konteksti
+  const labels = labelsByLang[language]; // 🔑 tilga qarab matnlar
 
   const fetchData = async () => {
     try {
@@ -57,9 +88,10 @@ export default function Page() {
         return;
       }
 
+      // 🔑 API ga lang param qo‘shildi
       const url = `http://backend.gamefit.uz/subscription/by-graphic?clubId=1&date=${selectedDate.format(
         "YYYY-MM-DD"
-      )}&stateIndex=${activeTab}&size=${pageSize}&page=${currentPage}`;
+      )}&stateIndex=${activeTab}&size=${pageSize}&page=${currentPage}&lang=${language}`;
 
       const res = await fetch(url, {
         headers: {
@@ -86,10 +118,10 @@ export default function Page() {
         room: item.roomNumber,
         rate:
           item.serviceNameIndex === 0
-            ? "Успешно"
+            ? labels.tabs[0]
             : item.serviceNameIndex === 1
-              ? "Истек срок"
-              : "Заблокировано",
+              ? labels.tabs[1]
+              : labels.tabs[2],
         price: item.subsPrice.toLocaleString("ru-RU"),
         status: item.serviceNameIndex,
         avatar: item.fileToUsers?.contentUrl || "",
@@ -107,7 +139,7 @@ export default function Page() {
 
   useEffect(() => {
     fetchData();
-  }, [activeTab, pageSize, currentPage, selectedDate]);
+  }, [activeTab, pageSize, currentPage, selectedDate, language]); // 🔑 language qo‘shildi
 
   const filteredData = tableData.filter((item) =>
     (item.token + item.name).toLowerCase().includes(searchTerm.toLowerCase())
@@ -173,33 +205,29 @@ export default function Page() {
             marginBottom: 10,
           }}
         >
-          График
+          {labels.title}
         </h2>
 
         {/* Tabs */}
         <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-          {[
-            { key: 0, label: "Успешно" },
-            { key: 1, label: "Истек срок" },
-            { key: 2, label: "Заблокировано" },
-          ].map((tab) => (
+          {labels.tabs.map((tabLabel, idx) => (
             <div
-              key={tab.key}
+              key={idx}
               onClick={() => {
-                setActiveTab(tab.key);
+                setActiveTab(idx);
                 setSearchTerm("");
                 setCurrentPage(0);
               }}
               style={{
-                background: activeTab === tab.key ? "#3D7BFF" : "transparent",
-                color: activeTab === tab.key ? "#fff" : "#ccc",
+                background: activeTab === idx ? "#3D7BFF" : "transparent",
+                color: activeTab === idx ? "#fff" : "#ccc",
                 padding: "6px 18px",
                 borderRadius: 8,
                 fontWeight: 500,
                 cursor: "pointer",
               }}
             >
-              {tab.label}
+              {tabLabel}
             </div>
           ))}
         </div>
@@ -226,7 +254,7 @@ export default function Page() {
           />
 
           <Input
-            placeholder="Поиск токен или имя"
+            placeholder={labels.search}
             prefix={<SearchOutlined style={{ color: "#999" }} />}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -246,7 +274,7 @@ export default function Page() {
           bordered={false}
           loading={loading}
           locale={{
-            emptyText: "Ma'lumot yo‘q",
+            emptyText: labels.empty,
           }}
           style={{
             marginTop: 10,
@@ -255,15 +283,12 @@ export default function Page() {
           }}
           rowClassName={() => "custom-table-row"}
           className="custom-table pt-5"
-          // jadvaldagi onRow (sening oldingi kod ichida shu joyni topib almashtir)
           onRow={(record) => ({
             onClick: () => {
               console.log("Navigate subToken:", record.token);
               router.push(`/schedules/${encodeURIComponent(record.token)}`);
             },
           })}
-
-
         />
 
         {/* Pagination */}
@@ -289,7 +314,7 @@ export default function Page() {
               <Option value="50">50</Option>
             </Select>
             <Typography.Text style={{ color: "#3D7BFF", fontWeight: 500 }}>
-              Количество строк
+              {labels.rows}
             </Typography.Text>
           </div>
 
@@ -303,7 +328,7 @@ export default function Page() {
               if (type === "prev")
                 return <span style={{ color: "#3D7BFF" }}>{"<"}</span>;
               if (type === "next")
-                return <span style={{ color: "#3D7BFF" }}>{"Далее"}</span>;
+                return <span style={{ color: "#3D7BFF" }}>{labels.next}</span>;
               return <span>{page}</span>;
             }}
           />

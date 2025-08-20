@@ -1,7 +1,8 @@
-// app/layout.jsx
 import { Geist, Geist_Mono } from "next/font/google";
 import "./styles/globals.css";
-import LayoutWrapper from "./components/LayoutWrapper"; // 👈 Client Component import
+import LayoutWrapper from "./components/LayoutWrapper";
+import { LanguageProvider } from "./context/LanguageContext";
+import AuthGuard from "./components/AuthGuard"; // qo‘shdik
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,7 +26,11 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         style={{ backgroundColor: "#141421", color: "white" }}
       >
-        <LayoutWrapper>{children}</LayoutWrapper>
+        <LanguageProvider>
+          <AuthGuard>
+            <LayoutWrapper>{children}</LayoutWrapper>
+          </AuthGuard>
+        </LanguageProvider>
       </body>
     </html>
   );

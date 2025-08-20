@@ -3,30 +3,67 @@
 import React, { useEffect, useState } from "react";
 import { Card, Input, Typography, Spin } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
+import { useLanguage } from "../context/LanguageContext";
 
 const { Title, Text } = Typography;
 
 export default function EditTariff({ clubId, serviceNameIndex, onBack }) {
+    const { language } = useLanguage();
     const [loading, setLoading] = useState(true);
     const [tariff, setTariff] = useState(null);
 
-    const fields = [
-        { key: "cpu", label: "Процессор (CPU)" },
-        { key: "gpu", label: "Видеокарта (GPU)" },
-        { key: "storage", label: "Хранилище (SSD / HDD)" },
-        { key: "ram", label: "Оперативная память (RAM)" },
-        { key: "keyboard", label: "Клавиатура" },
-        { key: "mouse", label: "Мышь" },
-        { key: "monitor", label: "Монитор" },
-        { key: "headPhones", label: "Наушники" },
-        { key: "hourlyPrice", label: "Почасовая цена (сум)" },
-    ];
-
-    const serviceNameMap = {
-        0: "Standart",
-        1: "Premium",
-        2: "VIP",
+    // Tariff fieldlari tillar bo‘yicha
+    const fieldsByLang = {
+        ru: [
+            { key: "cpu", label: "Процессор (CPU)" },
+            { key: "gpu", label: "Видеокарта (GPU)" },
+            { key: "storage", label: "Хранилище (SSD / HDD)" },
+            { key: "ram", label: "Оперативная память (RAM)" },
+            { key: "keyboard", label: "Клавиатура" },
+            { key: "mouse", label: "Мышь" },
+            { key: "monitor", label: "Монитор" },
+            { key: "headPhones", label: "Наушники" },
+            { key: "hourlyPrice", label: "Почасовая цена (сум)" },
+        ],
+        uz: [
+            { key: "cpu", label: "Protsessor (CPU)" },
+            { key: "gpu", label: "Videokarta (GPU)" },
+            { key: "storage", label: "Xotira (SSD / HDD)" },
+            { key: "ram", label: "Operativ xotira (RAM)" },
+            { key: "keyboard", label: "Klaviatura" },
+            { key: "mouse", label: "Sichqoncha" },
+            { key: "monitor", label: "Monitor" },
+            { key: "headPhones", label: "Quloqchin" },
+            { key: "hourlyPrice", label: "Soatbay narx (so‘m)" },
+        ],
+        en: [
+            { key: "cpu", label: "Processor (CPU)" },
+            { key: "gpu", label: "Graphics Card (GPU)" },
+            { key: "storage", label: "Storage (SSD / HDD)" },
+            { key: "ram", label: "Memory (RAM)" },
+            { key: "keyboard", label: "Keyboard" },
+            { key: "mouse", label: "Mouse" },
+            { key: "monitor", label: "Monitor" },
+            { key: "headPhones", label: "Headphones" },
+            { key: "hourlyPrice", label: "Hourly Price (UZS)" },
+        ],
     };
+
+    // Tariff nomlari
+    const serviceNameMap = {
+        ru: { 0: "Стандарт", 1: "Премиум", 2: "ВИП" },
+        uz: { 0: "Standart", 1: "Premium", 2: "VIP" },
+        en: { 0: "Standard", 1: "Premium", 2: "VIP" },
+    };
+
+    // Back tugmasi
+    const backText = {
+        ru: "Назад",
+        uz: "Orqaga",
+        en: "Back",
+    };
+
+    const fields = fieldsByLang[language] || fieldsByLang["ru"];
 
     useEffect(() => {
         const fetchTariff = async () => {
@@ -40,7 +77,7 @@ export default function EditTariff({ clubId, serviceNameIndex, onBack }) {
                 }
 
                 const res = await fetch(
-                    `http://backend.gamefit.uz/club-futures/by-club?clubId=${clubId}`,
+                    `http://backend.gamefit.uz/club-futures/by-club?clubId=${clubId}&lang=${language}`,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -55,7 +92,6 @@ export default function EditTariff({ clubId, serviceNameIndex, onBack }) {
                         (t) => t.serviceNameIndex === serviceNameIndex
                     );
 
-                    // Agar topilmasa ham bo‘sh forma ochamiz
                     setTariff(
                         found || {
                             serviceNameIndex,
@@ -80,7 +116,7 @@ export default function EditTariff({ clubId, serviceNameIndex, onBack }) {
         };
 
         fetchTariff();
-    }, [clubId, serviceNameIndex]);
+    }, [clubId, serviceNameIndex, language]);
 
     if (loading) {
         return (
@@ -99,29 +135,24 @@ export default function EditTariff({ clubId, serviceNameIndex, onBack }) {
     }
 
     return (
-        <div style={{ background: "#0F111A", minHeight: "100vh", padding: 24 }}>
+        <div style={{ minHeight: "100vh", padding: 10 }}>
             <div style={{ maxWidth: 720, margin: "0 auto" }}>
                 {/* Back */}
-                <div
-                    style={{
-                        color: "#A3A3A3",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        cursor: "pointer",
-                        marginBottom: 24,
-                        fontSize: 16,
-                    }}
+                <div className=" flex gap-4 items-center" style={{
+                    marginBottom: "20px"
+
+                }}
+
                     onClick={onBack}
                 >
-                    <ArrowLeftOutlined />
-                    <span>Назад</span>
+                    <ArrowLeftOutlined className=" cursor-pointer" />
+                    <span>{backText[language]}</span>
                 </div>
 
-                <Card
+                <div
                     title={
                         <Title level={4} style={{ color: "#00C3FF", margin: 0 }}>
-                            💻 {serviceNameMap[tariff.serviceNameIndex] || "Тариф"}
+                            💻 {serviceNameMap[language][tariff.serviceNameIndex] || "Tariff"}
                         </Title>
                     }
                     style={{
@@ -129,6 +160,7 @@ export default function EditTariff({ clubId, serviceNameIndex, onBack }) {
                         color: "white",
                         marginBottom: 24,
                         borderRadius: 12,
+                        padding: "10px"
                     }}
                     headStyle={{ borderBottom: "1px solid #3A3D4A" }}
                 >
@@ -147,7 +179,7 @@ export default function EditTariff({ clubId, serviceNameIndex, onBack }) {
                             />
                         </div>
                     ))}
-                </Card>
+                </div>
             </div>
         </div>
     );

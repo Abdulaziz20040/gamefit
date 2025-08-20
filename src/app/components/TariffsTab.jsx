@@ -3,21 +3,37 @@
 import React, { useState, useEffect } from "react";
 import { FaChartBar, FaStar, FaTrophy, FaRegEdit } from "react-icons/fa";
 import EditTariff from "./EditTariff";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function TariffsTab({ clubId }) {
+    const { language } = useLanguage(); // tanlangan til (uz, ru, en)
     const [tariffs, setTariffs] = useState([]);
-    const [editingIndex, setEditingIndex] = useState(null); // 0,1,2 saqlanadi
+    const [editingIndex, setEditingIndex] = useState(null);
 
-    // Ikonkalar va nomlar
+    // Ikonkalar
     const serviceIcons = {
         0: <FaChartBar />,
         1: <FaStar />,
         2: <FaTrophy />,
     };
+
+    // Nomi 3 tilda
     const serviceNames = {
-        0: "Standart",
-        1: "Premium",
-        2: "VIP",
+        ru: {
+            0: "Стандарт",
+            1: "Премиум",
+            2: "ВИП",
+        },
+        uz: {
+            0: "Standart",
+            1: "Premium",
+            2: "VIP",
+        },
+        en: {
+            0: "Standard",
+            1: "Premium",
+            2: "VIP",
+        },
     };
 
     // API dan tariflar olish
@@ -31,7 +47,7 @@ export default function TariffsTab({ clubId }) {
                 }
 
                 const res = await fetch(
-                    `http://backend.gamefit.uz/club-futures/by-club?clubId=${clubId}`,
+                    `http://backend.gamefit.uz/club-futures/by-club?clubId=${clubId}&lang=${language}`,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -47,9 +63,9 @@ export default function TariffsTab({ clubId }) {
                         return {
                             id: found?.id || null,
                             serviceNameIndex: index,
-                            name: serviceNames[index],
+                            name: serviceNames[language][index], // tilga qarab nomlanadi
                             icon: serviceIcons[index],
-                            active: Boolean(found), // topilsa active = true
+                            active: Boolean(found),
                         };
                     });
                     setTariffs(sortedTariffs);
@@ -62,7 +78,7 @@ export default function TariffsTab({ clubId }) {
         };
 
         fetchTariffs();
-    }, [clubId]);
+    }, [clubId, language]); // til o‘zgarsa qayta fetch qiladi
 
     // Edit bosilganda EditTariff sahifasiga o'tish
     if (editingIndex !== null) {
@@ -70,8 +86,8 @@ export default function TariffsTab({ clubId }) {
         return (
             <EditTariff
                 clubId={clubId}
-                serviceNameIndex={editingIndex} // 0,1,2 yuboriladi
-                tariffId={editingTariff?.id} // agar yo‘q bo‘lsa null
+                serviceNameIndex={editingIndex}
+                tariffId={editingTariff?.id}
                 onBack={() => setEditingIndex(null)}
             />
         );
@@ -116,39 +132,51 @@ export default function TariffsTab({ clubId }) {
                         </span>
                     </div>
 
-                    {/* Edit icon */}
-                    <div
-                        style={{ color: "#00BFFF", fontSize: "18px", cursor: "pointer" }}
-                        onClick={() => setEditingIndex(tariff.serviceNameIndex)}
-                    >
-                        <FaRegEdit />
-                    </div>
-
-                    {/* Switch tugma */}
-                    <div
-                        onClick={() => toggleTariff(tariff.id)}
-                        style={{
-                            width: "40px",
-                            height: "20px",
-                            background: tariff.active ? "#00BFFF" : "#555",
-                            borderRadius: "20px",
-                            position: "relative",
-                            cursor: "pointer",
-                            transition: "0.3s",
-                        }}
-                    >
+                    <div className=" flex items-center gap-4">
+                        {/* Edit icon */}
                         <div
                             style={{
-                                width: "16px",
-                                height: "16px",
-                                background: "#222",
-                                borderRadius: "50%",
-                                position: "absolute",
-                                top: "2px",
-                                left: tariff.active ? "22px" : "2px",
+                                color: tariff.active ? "#00BFFF" : "#555",
+                                fontSize: "18px",
+                                cursor: tariff.active ? "pointer" : "not-allowed",
+                                opacity: tariff.active ? 1 : 0.5,
+                            }}
+                            onClick={() => {
+                                if (tariff.active) {
+                                    setEditingIndex(tariff.serviceNameIndex);
+                                }
+                            }}
+                        >
+                            <FaRegEdit />
+                        </div>
+
+
+                        {/* Switch tugma */}
+                        <div
+                            onClick={() => toggleTariff(tariff.id)}
+                            style={{
+                                width: "40px",
+                                height: "20px",
+                                background: tariff.active ? "#00BFFF" : "#555",
+                                borderRadius: "20px",
+                                position: "relative",
+                                cursor: "pointer",
                                 transition: "0.3s",
                             }}
-                        ></div>
+                        >
+                            <div
+                                style={{
+                                    width: "16px",
+                                    height: "16px",
+                                    background: "#222",
+                                    borderRadius: "50%",
+                                    position: "absolute",
+                                    top: "2px",
+                                    left: tariff.active ? "22px" : "2px",
+                                    transition: "0.3s",
+                                }}
+                            ></div>
+                        </div>
                     </div>
                 </div>
             ))}

@@ -7,6 +7,7 @@ import { FaRegEdit, FaHeart } from "react-icons/fa";
 import { IoMdAdd } from "react-icons/io";
 import { useRouter } from "next/navigation";
 import CreateGameClubsModal from "../components/modals/CreateGameClubsModal";
+import { API } from "@/config/api";
 
 export default function GameClub() {
   const router = useRouter();
@@ -24,11 +25,7 @@ export default function GameClub() {
   const fetchData = async (page = currentPage, size = pageSize) => {
     setLoading(true);
     try {
-      // API 0-based page qabul qiladi
-      const res = await fetch(
-        `https://backend.gamefit.uz/game-club/by-page?size=${size}&page=${page - 1}`
-      );
-      const data = await res.json();
+      const data = await API.getGameClubs({ page, size });
 
       if (data?.success && data?.content?.content) {
         const tableData = data.content.content.map((club) => ({
@@ -39,7 +36,7 @@ export default function GameClub() {
           description: club.description,
           startTime: club.startAt,
           endTime: club.endAt,
-          status: club.statusIndex === 0 ? 'Active' : 'Inactive',
+          status: club.statusIndex === 0 ? "Active" : "Inactive",
           location: `${club.address?.cityName || ""}, ${club.address?.districtName || ""}, ${club.address?.streetName || ""}`,
           country: club.address?.countryName || "",
           latitude: club.address?.latitude || "",
@@ -56,12 +53,11 @@ export default function GameClub() {
         setTotalElements(data.content.page.totalElements);
       }
     } catch (err) {
-      console.log("Xato:", err);
+      console.error("❌ fetchData error:", err);
     } finally {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchData(currentPage, pageSize);
   }, [currentPage, pageSize]);

@@ -1,63 +1,62 @@
 "use client";
 
-import axios from "axios";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/app/context/LanguageContext";
+import axiosInstance from "@/app/utils/axiosInstance";
+import { API } from "@/config/api";
 
 export default function LoginPage() {
     const [username, setUsername] = useState("+998978096972"); // default qiymat
     const [password, setPassword] = useState("root"); // default qiymat
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const { language } = useLanguage();
 
+    // 🔥 Har bir til uchun tarjimalar
+    const userLabels = {
+        ru: {
+            title: "ВОЙТИ В СИСТЕМУ",
+            subtitle: "Контроль, порядок, заработок — все в одном приложении",
+            login: "Логин",
+            password: "Пароль",
+            remember: "Запоминание",
+            button: "Войти в систему",
+            loading: "Kuting...",
+            error: "Логин хато! Пользователь или пароль неверный.",
+        },
+        uz: {
+            title: "TIZIMGA KIRISH",
+            subtitle: "Nazorat, tartib, daromad — barchasi bitta ilovada",
+            login: "Login",
+            password: "Parol",
+            remember: "Eslab qolish",
+            button: "Tizimga kirish",
+            loading: "Kuting...",
+            error: "Login xato! Foydalanuvchi nomi yoki parol noto‘g‘ri.",
+        },
+        en: {
+            title: "LOGIN TO SYSTEM",
+            subtitle: "Control, order, income — all in one app",
+            login: "Username",
+            password: "Password",
+            remember: "Remember me",
+            button: "Login",
+            loading: "Please wait...",
+            error: "Login failed! Invalid username or password.",
+        },
+    };
+
+    const t = userLabels[language];
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
 
         try {
-            // APIga POST so'rovi
-            const response = await axios.post(
-                "http://backend.gamefit.uz/auth/get-club-token",
-                {
-                    username: username,
-                    password: password,
-                },
-                {
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
-
-            const data = response.data;
-            console.log("Response:", data);
-
-            if (!data.content?.accessToken) {
-                throw new Error("Login failed!");
-            }
-
-            const accessToken = data.content.accessToken;
-            localStorage.setItem("accessToken", accessToken);
-
-            // Tokenni decode qilib clubId va username saqlash
-            try {
-                const tokenParts = accessToken.split(".");
-                const payload = JSON.parse(atob(tokenParts[1]));
-
-                if (payload.sub) {
-                    const clubData = JSON.parse(payload.sub);
-                    localStorage.setItem("clubId", clubData.clubId);
-                    localStorage.setItem("clubUsername", clubData.username);
-                }
-            } catch (err) {
-                console.warn("Token decode qilishda xatolik:", err);
-            }
-
-            // Navigate asosiy pagega
+            await API.loginClub(username, password);
             router.push("/");
         } catch (error) {
-            console.error("❌", error);
-            alert("Login xatolik! Foydalanuvchi nomi yoki parol xato.");
+            alert(t.error);
         } finally {
             setLoading(false);
         }
@@ -86,7 +85,7 @@ export default function LoginPage() {
                             <span style={{ textShadow: "0 0 10px rgba(255,255,255,0.7)" }}>GameFit</span>
                         </div>
                         <p className="text-center text-base font-light max-w-xs leading-relaxed text-white/90">
-                            Контроль, порядок, заработок — все в одном приложении
+                            {t.subtitle}
                         </p>
                     </div>
                 </div>
@@ -94,33 +93,33 @@ export default function LoginPage() {
                 {/* O‘ng tomoni */}
                 <div className="w-[30%] bg-[#14141F] px-8 py-10 flex flex-col justify-center z-10">
                     <h2 className="text-white text-xl font-semibold mb-6 text-center tracking-widest">
-                        ВОЙТИ В СИСТЕМУ
+                        {t.title}
                     </h2>
                     <form className="space-y-5" onSubmit={handleSubmit}>
                         <input
                             type="text"
-                            placeholder="Логин"
+                            placeholder={t.login}
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             className="w-full px-5 py-3 rounded-lg bg-[#1E1E2A] border border-[#2A2A3A] text-white placeholder-white/60 focus:outline-none focus:border-[#328BFF]"
                         />
                         <input
                             type="password"
-                            placeholder="Пароль"
+                            placeholder={t.password}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             className="w-full px-5 py-3 rounded-lg bg-[#1E1E2A] border border-[#2A2A3A] text-white placeholder-white/60 focus:outline-none focus:border-[#328BFF]"
                         />
                         <div className="flex items-center text-white text-sm">
                             <input type="checkbox" className="mr-2 w-4 h-4 accent-[#328BFF]" defaultChecked />
-                            Запоминание
+                            {t.remember}
                         </div>
                         <button
                             type="submit"
                             disabled={loading}
                             className="w-full py-3 cursor-pointer bg-[#00B2FF] hover:bg-[#009ADC] text-white font-semibold rounded-lg mt-2 text-base tracking-wide shadow-md transition-colors duration-200"
                         >
-                            {loading ? "Kuting..." : "Войти в систему"}
+                            {loading ? t.loading : t.button}
                         </button>
                     </form>
                 </div>

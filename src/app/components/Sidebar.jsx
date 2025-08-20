@@ -11,6 +11,7 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button, Modal } from "antd";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function Sidebar() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,31 +22,28 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   const handleOk = () => {
-    localStorage.clear(); // 🔴 LOCALSTORAGE TOZALANADI
-    window.location.reload(); // 🔁 SAHIFA YANGILANADI
+    localStorage.clear();
+    window.location.reload();
   };
 
+  // 🔑 Til konteksti
+  const { getLabels, language } = useLanguage();
+  const labels = getLabels();
+
+  // 🔑 Tilga qarab menyu matnlari
   const menuItems = [
-    { label: "Панель", icon: <MdDashboard size={20} />, href: "/" },
-    { label: "График", icon: <MdDateRange size={20} />, href: "/schedules" },
-    { label: "Бронирование", icon: <MdEditCalendar size={20} />, href: "/booking" },
-    {
-      label: "Игроклубы",
-      icon: <MdSportsEsports size={20} />,
-      href: "/game-clubs",
-    },
-    {
-      label: "Статистика",
-      icon: <MdAccountBalance size={20} />,
-      href: "/club-account",
-    }
+    { label: { ru: "Панель", uz: "Panel", en: "Dashboard" }[language], icon: <MdDashboard size={20} />, href: "/" },
+    { label: { ru: "График", uz: "Jadval", en: "Schedules" }[language], icon: <MdDateRange size={20} />, href: "/schedules" },
+    { label: { ru: "Бронирование", uz: "Bron qilish", en: "Booking" }[language], icon: <MdEditCalendar size={20} />, href: "/booking" },
+    { label: { ru: "Игроклубы", uz: "O‘yin klublar", en: "Game Clubs" }[language], icon: <MdSportsEsports size={20} />, href: "/game-clubs" },
+    { label: { ru: "Статистика", uz: "Statistika", en: "Statistics" }[language], icon: <MdAccountBalance size={20} />, href: "/club-account" },
   ];
 
   return (
-    <div style={{
-      color: "white",
-      borderRadius: "0px 10px 10px 0px"
-    }} className="w-60 h-screen bg-[#0F0F1A] text-white flex flex-col justify-between ">
+    <div
+      style={{ color: "white", borderRadius: "0px 10px 10px 0px" }}
+      className="w-60 h-screen bg-[#0F0F1A] text-white flex flex-col justify-between"
+    >
       {/* Logo */}
       <div>
         <div className="px-6 py-6">
@@ -85,27 +83,31 @@ export default function Sidebar() {
           className="w-full flex items-center cursor-pointer justify-center gap-2 text-red-500 text-sm py-2 px-4 border border-red-200 rounded-lg hover:bg-red-50 transition-all"
         >
           <MdLogout size={18} />
-          Log out
+          {labels.logout}
         </button>
       </div>
 
-      {/* Logout Modal - DARK MODE MOS */}
+      {/* Logout Modal */}
       <Modal
         open={isModalOpen}
         onCancel={handleCancel}
         footer={null}
         centered
         width={353}
-        style={{ backgroundColor: "#1a1a2e", borderRadius: "10px" }}
-        bodyStyle={{
-          color: "#fff",
+        style={{
+          backgroundColor: "#1a1a2e", borderRadius: "10px", color: "#fff",
           padding: "24px",
         }}
+
         closable={false}
       >
         <div className="flex flex-col justify-between h-full">
           <p className="text-center text-lg font-medium text-black mb-4">
-            Do you want to leave?
+            {language === "ru"
+              ? "Вы хотите выйти?"
+              : language === "uz"
+                ? "Chiqishni xohlaysizmi?"
+                : "Do you want to leave?"}
           </p>
 
           <div className="flex justify-end gap-3">
@@ -120,7 +122,11 @@ export default function Sidebar() {
               className=" w-[154.5px] h-[45px] "
               onClick={handleCancel}
             >
-              Cancel
+              {language === "ru"
+                ? "Отмена"
+                : language === "uz"
+                  ? "Bekor qilish"
+                  : "Cancel"}
             </Button>
             <Button
               className=" w-[154.5px] h-[45px]"
@@ -128,7 +134,11 @@ export default function Sidebar() {
               danger
               onClick={handleOk}
             >
-              Exit
+              {language === "ru"
+                ? "Выйти"
+                : language === "uz"
+                  ? "Chiqish"
+                  : "Exit"}
             </Button>
           </div>
         </div>

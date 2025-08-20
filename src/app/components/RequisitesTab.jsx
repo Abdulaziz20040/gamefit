@@ -1,8 +1,64 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function RequisitesTab({ inputStyle, clubId }) {
+    const { language } = useLanguage(); // 🔥 Contextdan tilni olish
+
+    const texts = {
+        uz: {
+            title: "Rekvizitlar",
+            branchId: "Filial identifikatori",
+            paymentMfo: "To‘lov uchun MFO",
+            transitMfo: "Tranzit MFO",
+            clickCntrgId: "Click Cntrg ID",
+            transitAccount: "Tranzit hisob raqami",
+            contractNumber: "Shartnoma raqami",
+            paymentAccount: "To‘lov hisob raqami",
+            createdAt: "Qo‘shilgan sana",
+            commissionPercent: "Komissiya foizi (%)",
+            save: "Saqlash",
+            success: "✅ Ma'lumotlar saqlandi!",
+            error: "❌ Xatolik",
+            tokenMissing: "❌ Token topilmadi",
+        },
+        ru: {
+            title: "Реквизиты",
+            branchId: "Идентификатор филиала",
+            paymentMfo: "МФО для платежей",
+            transitMfo: "Транзитный МФО",
+            clickCntrgId: "Click Cntrg ID",
+            transitAccount: "Транзитный счёт",
+            contractNumber: "Номер договора",
+            paymentAccount: "Платёжный счёт",
+            createdAt: "Дата добавления",
+            commissionPercent: "Процент комиссии (%)",
+            save: "Сохранить",
+            success: "✅ Данные сохранены!",
+            error: "❌ Ошибка",
+            tokenMissing: "❌ Токен отсутствует",
+        },
+        en: {
+            title: "Requisites",
+            branchId: "Branch ID",
+            paymentMfo: "Payment MFO",
+            transitMfo: "Transit MFO",
+            clickCntrgId: "Click Cntrg ID",
+            transitAccount: "Transit Account",
+            contractNumber: "Contract Number",
+            paymentAccount: "Payment Account",
+            createdAt: "Created At",
+            commissionPercent: "Commission Percent (%)",
+            save: "Save",
+            success: "✅ Data saved!",
+            error: "❌ Error",
+            tokenMissing: "❌ Token missing",
+        },
+    };
+
+    const t = texts[language]; // 🔥 tanlangan til
+
     const [formData, setFormData] = useState({
         branchId: "",
         paymentMfo: "",
@@ -23,7 +79,7 @@ export default function RequisitesTab({ inputStyle, clubId }) {
 
         const token = localStorage.getItem("accessToken");
         if (!token) {
-            console.error("Token topilmadi");
+            console.error(t.tokenMissing);
             return;
         }
 
@@ -56,7 +112,7 @@ export default function RequisitesTab({ inputStyle, clubId }) {
                 console.error("API Error:", err);
                 setDataExists(false);
             });
-    }, [clubId]);
+    }, [clubId, language]); // 🔥 til o'zgarsa UI qayta render bo'ladi
 
     // Inputlar o'zgarishini yozib boradi
     const handleChange = (e) => {
@@ -68,7 +124,7 @@ export default function RequisitesTab({ inputStyle, clubId }) {
     const handleSubmit = async () => {
         const token = localStorage.getItem("accessToken");
         if (!token) {
-            alert("Token topilmadi");
+            alert(t.tokenMissing);
             return;
         }
 
@@ -78,37 +134,42 @@ export default function RequisitesTab({ inputStyle, clubId }) {
             active: true,
         };
 
-        const res = await fetch("http://backend.gamefit.uz/banking-info", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(body),
-        });
+        try {
+            const res = await fetch("http://backend.gamefit.uz/banking-info", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(body),
+            });
 
-        const data = await res.json();
-        if (data?.success) {
-            alert("Ma'lumotlar saqlandi!");
-            setDataExists(true);
-        } else {
-            alert("Xatolik: " + data.message || "Noma'lum xatolik");
+            const data = await res.json();
+            if (data?.success) {
+                alert(t.success);
+                setDataExists(true);
+            } else {
+                alert(t.error + ": " + (data.message || "Unknown error"));
+            }
+        } catch (err) {
+            console.error("POST error:", err);
+            alert(t.error);
         }
     };
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-            <h2 style={{ color: "#f0f0f0", fontSize: "16px" }}>Реквизиты</h2>
+            <h2 style={{ color: "#f0f0f0", fontSize: "16px" }}>{t.title}</h2>
 
-            <input type="text" name="branchId" placeholder="Идентификатор филиала" style={inputStyle} value={formData.branchId} onChange={handleChange} />
-            <input type="text" name="paymentMfo" placeholder="МФО для платежей" style={inputStyle} value={formData.paymentMfo} onChange={handleChange} />
-            <input type="text" name="transitMfo" placeholder="Транзитный МФО" style={inputStyle} value={formData.transitMfo} onChange={handleChange} />
-            <input type="text" name="clickCntrgId" placeholder="Click Cntrg ID" style={inputStyle} value={formData.clickCntrgId} onChange={handleChange} />
-            <input type="text" name="transitAccount" placeholder="Транзитный счёт" style={inputStyle} value={formData.transitAccount} onChange={handleChange} />
-            <input type="text" name="contractNumber" placeholder="Номер договора" style={inputStyle} value={formData.contractNumber} onChange={handleChange} />
-            <input type="text" name="paymentAccount" placeholder="Платёжный счёт" style={inputStyle} value={formData.paymentAccount} onChange={handleChange} />
-            <input type="date" name="createdAt" placeholder="Дата добавления" style={inputStyle} value={formData.createdAt} onChange={handleChange} />
-            <input type="number" name="commissionPercent" placeholder="Процент комиссии (%)" style={inputStyle} value={formData.commissionPercent} onChange={handleChange} />
+            <input type="text" name="branchId" placeholder={t.branchId} style={inputStyle} value={formData.branchId} onChange={handleChange} />
+            <input type="text" name="paymentMfo" placeholder={t.paymentMfo} style={inputStyle} value={formData.paymentMfo} onChange={handleChange} />
+            <input type="text" name="transitMfo" placeholder={t.transitMfo} style={inputStyle} value={formData.transitMfo} onChange={handleChange} />
+            <input type="text" name="clickCntrgId" placeholder={t.clickCntrgId} style={inputStyle} value={formData.clickCntrgId} onChange={handleChange} />
+            <input type="text" name="transitAccount" placeholder={t.transitAccount} style={inputStyle} value={formData.transitAccount} onChange={handleChange} />
+            <input type="text" name="contractNumber" placeholder={t.contractNumber} style={inputStyle} value={formData.contractNumber} onChange={handleChange} />
+            <input type="text" name="paymentAccount" placeholder={t.paymentAccount} style={inputStyle} value={formData.paymentAccount} onChange={handleChange} />
+            <input type="date" name="createdAt" placeholder={t.createdAt} style={inputStyle} value={formData.createdAt} onChange={handleChange} />
+            <input type="number" name="commissionPercent" placeholder={t.commissionPercent} style={inputStyle} value={formData.commissionPercent} onChange={handleChange} />
 
             {!dataExists && (
                 <button
@@ -123,7 +184,7 @@ export default function RequisitesTab({ inputStyle, clubId }) {
                         cursor: "pointer",
                     }}
                 >
-                    Saqlash
+                    {t.save}
                 </button>
             )}
         </div>
