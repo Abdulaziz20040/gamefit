@@ -38,31 +38,17 @@ export default function ScheduleDetailsPage() {
                 const clubId = localStorage.getItem("clubId") || "1";
                 const accessToken = localStorage.getItem("accessToken") || "";
 
-                const url = `http://backend.gamefit.uz/subscription/by-sub-token?clubId=${encodeURIComponent(
-                    clubId
-                )}&subToken=${encodeURIComponent(subToken)}`;
+                const json = await API.getSubscriptionByToken({ clubId, subToken, accessToken });
 
-                const res = await fetch(url, {
-                    headers: accessToken
-                        ? { Authorization: `Bearer ${accessToken}` }
-                        : {},
-                });
-
-                const json = await res.json();
-                if (res.ok && json?.success) {
+                if (json?.success) {
                     setData(json.content);
 
                     if (json.content?.userId) {
-                        const userRes = await fetch(
-                            `http://backend.gamefit.uz/users/by-id-with-all-content?id=${json.content.userId}`,
-                            {
-                                headers: accessToken
-                                    ? { Authorization: `Bearer ${accessToken}` }
-                                    : {},
-                            }
-                        );
-                        const userJson = await userRes.json();
-                        if (userRes.ok && userJson?.success) {
+                        const userJson = await API.getUserById({
+                            userId: json.content.userId,
+                            accessToken,
+                        });
+                        if (userJson?.success) {
                             setUserData(userJson.content);
                         }
                     }
@@ -77,6 +63,7 @@ export default function ScheduleDetailsPage() {
             }
         })();
     }, [subToken]);
+
 
     if (loading) {
         return <div className="text-white p-10">Yuklanmoqda...</div>;

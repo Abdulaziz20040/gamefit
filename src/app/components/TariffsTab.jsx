@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { FaChartBar, FaStar, FaTrophy, FaRegEdit } from "react-icons/fa";
 import EditTariff from "./EditTariff";
 import { useLanguage } from "../context/LanguageContext";
+import { API } from "@/config/api";
 
 export default function TariffsTab({ clubId }) {
     const { language } = useLanguage(); // tanlangan til (uz, ru, en)
@@ -46,39 +47,28 @@ export default function TariffsTab({ clubId }) {
                     return;
                 }
 
-                const res = await fetch(
-                    `http://backend.gamefit.uz/club-futures/by-club?clubId=${clubId}&lang=${language}`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
-                const data = await res.json();
+                const data = await API.getClubFutures({ clubId, lang: language, accessToken: token });
 
-                if (data.success && Array.isArray(data.content)) {
-                    // Har doim 0,1,2 bo‘yicha ro‘yxat yasash
-                    const sortedTariffs = [0, 1, 2].map((index) => {
-                        const found = data.content.find((t) => t.serviceNameIndex === index);
-                        return {
-                            id: found?.id || null,
-                            serviceNameIndex: index,
-                            name: serviceNames[language][index], // tilga qarab nomlanadi
-                            icon: serviceIcons[index],
-                            active: Boolean(found),
-                        };
-                    });
-                    setTariffs(sortedTariffs);
-                } else {
-                    console.error("API noto‘g‘ri format qaytardi:", data);
-                }
+                const sortedTariffs = [0, 1, 2].map((index) => {
+                    const found = data.find((t) => t.serviceNameIndex === index);
+                    return {
+                        id: found?.id || null,
+                        serviceNameIndex: index,
+                        name: serviceNames[language][index], // tilga qarab nomlanadi
+                        icon: serviceIcons[index],
+                        active: Boolean(found),
+                    };
+                });
+
+                setTariffs(sortedTariffs);
             } catch (err) {
-                console.error("Tariff fetch error:", err);
+                console.error("❌ fetchTariffs error:", err);
             }
         };
 
         fetchTariffs();
-    }, [clubId, language]); // til o‘zgarsa qayta fetch qiladi
+    }, [clubId, language]);
+
 
     // Edit bosilganda EditTariff sahifasiga o'tish
     if (editingIndex !== null) {

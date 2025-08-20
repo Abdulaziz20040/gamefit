@@ -67,45 +67,29 @@ export default function EditTariff({ clubId, serviceNameIndex, onBack }) {
 
     useEffect(() => {
         const fetchTariff = async () => {
+            setLoading(true);
             try {
-                setLoading(true);
-
                 const token = localStorage.getItem("accessToken");
                 if (!token) {
                     console.error("Token topilmadi");
                     return;
                 }
 
-                const res = await fetch(
-                    `http://backend.gamefit.uz/club-futures/by-club?clubId=${clubId}&lang=${language}`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
+                const found = await API.getClubFutureByService({
+                    clubId,
+                    serviceNameIndex,
+                    lang: language,
+                    accessToken: token,
+                });
 
-                const data = await res.json();
-
-                if (data.success && Array.isArray(data.content)) {
-                    const found = data.content.find(
-                        (t) => t.serviceNameIndex === serviceNameIndex
-                    );
-
-                    setTariff(
-                        found || {
-                            serviceNameIndex,
-                            ...fields.reduce((acc, f) => ({ ...acc, [f.key]: "" }), {}),
-                        }
-                    );
-                } else {
-                    setTariff({
+                setTariff(
+                    found || {
                         serviceNameIndex,
                         ...fields.reduce((acc, f) => ({ ...acc, [f.key]: "" }), {}),
-                    });
-                }
+                    }
+                );
             } catch (err) {
-                console.error("Tariff fetch error:", err);
+                console.error("❌ fetchTariff error:", err);
                 setTariff({
                     serviceNameIndex,
                     ...fields.reduce((acc, f) => ({ ...acc, [f.key]: "" }), {}),
@@ -117,6 +101,7 @@ export default function EditTariff({ clubId, serviceNameIndex, onBack }) {
 
         fetchTariff();
     }, [clubId, serviceNameIndex, language]);
+
 
     if (loading) {
         return (

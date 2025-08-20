@@ -73,23 +73,14 @@ export default function AccountTab({ inputStyle, clubId, language }) {
         const fetchAccount = async () => {
             if (!clubId) return;
             setFetching(true);
+
             try {
-                const res = await fetch(
-                    `http://backend.gamefit.uz/club-account/by-club-id?clubId=${clubId}`,
-                    {
-                        method: "GET",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-                        },
-                    }
-                );
+                const a = await API.getClubAccountByClubId({
+                    clubId,
+                    accessToken: localStorage.getItem("accessToken"),
+                });
 
-                const data = await res.json();
-                console.log("📥 Kelgan ma'lumot:", data);
-
-                if (res.ok && data?.content) {
-                    const a = data.content;
+                if (a) {
                     setUsername(a.username || "");
                     setFullName(a.fullName || "");
                     setDate(dayjs(a.addedAt));
@@ -99,7 +90,7 @@ export default function AccountTab({ inputStyle, clubId, language }) {
                     setIsExisting(false);
                 }
             } catch (error) {
-                console.error("❌ Fetch xatosi:", error);
+                console.error("❌ fetchAccount error:", error);
                 setIsExisting(false);
             } finally {
                 setFetching(false);
@@ -108,6 +99,7 @@ export default function AccountTab({ inputStyle, clubId, language }) {
 
         fetchAccount();
     }, [clubId]);
+
 
     // 📝 Akkaunt saqlash
     const handleSave = async () => {
@@ -129,19 +121,14 @@ export default function AccountTab({ inputStyle, clubId, language }) {
         setLoading(true);
 
         try {
-            const res = await fetch("http://backend.gamefit.uz/club-account", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-                },
-                body: JSON.stringify(payload),
+            const data = await API.saveClubAccount({
+                body: payload,
+                accessToken: localStorage.getItem("accessToken"),
             });
 
-            const data = await res.json();
             console.log("✅ Yuborilgan javob:", data);
 
-            if (res.ok) {
+            if (data?.success) {
                 alert(t.success);
                 setPassword("");
                 setIsExisting(true);
@@ -153,12 +140,13 @@ export default function AccountTab({ inputStyle, clubId, language }) {
                 }
             }
         } catch (error) {
-            console.error("❌ POST xatosi:", error);
+            console.error("❌ handleSave error:", error);
             alert(t.error);
         } finally {
             setLoading(false);
         }
     };
+
 
     if (fetching) return <div style={{ color: "#aaa" }}>{t.checking}</div>;
 

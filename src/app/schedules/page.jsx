@@ -78,8 +78,8 @@ export default function Page() {
   const labels = labelsByLang[language]; // 🔑 tilga qarab matnlar
 
   const fetchData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const token = localStorage.getItem("accessToken");
       if (!token) {
         message.error("Access token topilmadi!");
@@ -88,27 +88,17 @@ export default function Page() {
         return;
       }
 
-      // 🔑 API ga lang param qo‘shildi
-      const url = `http://backend.gamefit.uz/subscription/by-graphic?clubId=1&date=${selectedDate.format(
-        "YYYY-MM-DD"
-      )}&stateIndex=${activeTab}&size=${pageSize}&page=${currentPage}&lang=${language}`;
-
-      const res = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const content = await API.getSubscriptionsByGraphic({
+        clubId: 1,
+        date: selectedDate.format("YYYY-MM-DD"),
+        stateIndex: activeTab,
+        size: pageSize,
+        page: currentPage,
+        lang: language,
+        accessToken: token,
       });
 
-      if (!res.ok) {
-        setTableData([]);
-        setTotalElements(0);
-        throw new Error(`API xatosi: ${res.status}`);
-      }
-
-      const data = await res.json();
-      const content = data?.content?.content || [];
-
-      const mappedData = content.map((item, index) => ({
+      const mappedData = content?.content?.map((item, index) => ({
         key: index,
         token: item.subToken,
         club: item.clubName,
@@ -127,10 +117,10 @@ export default function Page() {
         avatar: item.fileToUsers?.contentUrl || "",
       }));
 
-      setTableData(mappedData);
-      setTotalElements(data?.content?.page?.totalElements || 0);
+      setTableData(mappedData || []);
+      setTotalElements(content?.page?.totalElements || 0);
     } catch (error) {
-      console.error("Ma'lumot olishda xato:", error);
+      console.error("❌ fetchData error:", error);
       message.error("Ma'lumotlarni olishda xato yuz berdi");
     } finally {
       setLoading(false);

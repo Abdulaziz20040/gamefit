@@ -77,21 +77,11 @@ export default function AddressTab({ inputStyle, clubId }) {
         }
 
         const fetchAddress = async () => {
+            setLoading(true);
             try {
-                const response = await fetch(
-                    `http://backend.gamefit.uz/address?id=${clubId}&lang=${language}`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
+                const a = await API.getAddressByClubId({ clubId, lang: language, accessToken: token });
 
-                const data = await response.json();
-                console.log("✅ API javobi:", data);
-
-                if (response.ok && data?.content) {
-                    const a = data.content;
+                if (a) {
                     setCountryName(a.countryName || "");
                     setCityName(a.cityName || "");
                     setStreetName(a.streetName || "");
@@ -105,7 +95,7 @@ export default function AddressTab({ inputStyle, clubId }) {
                     setMessage(t.notFound);
                 }
             } catch (error) {
-                console.error("❌ Fetch error:", error);
+                console.error("❌ fetchAddress error:", error);
                 setMessage(t.serverError);
             } finally {
                 setLoading(false);
@@ -114,6 +104,7 @@ export default function AddressTab({ inputStyle, clubId }) {
 
         fetchAddress();
     }, [clubId, language]);
+
 
     // Yangi ma’lumot yuborish
     const handleSubmit = async () => {
@@ -138,29 +129,21 @@ export default function AddressTab({ inputStyle, clubId }) {
         console.log("📤 Yuborilayotgan ma'lumotlar:", data);
 
         try {
-            const res = await fetch("http://backend.gamefit.uz/address", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(data),
-            });
-
-            const result = await res.json();
+            const result = await API.saveAddress({ body: data, accessToken: token });
             console.log("📥 API javobi:", result);
 
-            if (res.ok) {
+            if (result?.success) {
                 setMessage(t.success);
                 setIsExisting(true);
             } else {
                 setMessage(t.error + ": " + (result.message || "Unknown error"));
             }
         } catch (err) {
-            console.error("❌ Yuborishda xatolik:", err);
+            console.error("❌ handleSubmit error:", err);
             setMessage(t.serverError);
         }
     };
+
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>

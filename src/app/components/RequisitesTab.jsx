@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useLanguage } from "../context/LanguageContext";
+import { API } from "@/config/api";
 
 export default function RequisitesTab({ inputStyle, clubId }) {
     const { language } = useLanguage(); // 🔥 Contextdan tilni olish
@@ -77,21 +78,16 @@ export default function RequisitesTab({ inputStyle, clubId }) {
     useEffect(() => {
         if (!clubId) return;
 
-        const token = localStorage.getItem("accessToken");
-        if (!token) {
-            console.error(t.tokenMissing);
-            return;
-        }
+        const fetchBankingInfo = async () => {
+            const token = localStorage.getItem("accessToken");
+            if (!token) {
+                console.error(t.tokenMissing);
+                return;
+            }
 
-        fetch(`http://backend.gamefit.uz/banking-info/by-club-id?clubId=${clubId}`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                if (data?.success && data?.content) {
-                    const d = data.content;
+            try {
+                const d = await API.getBankingInfoByClubId({ clubId, accessToken: token });
+                if (d) {
                     setFormData({
                         branchId: d.branchId || "",
                         paymentMfo: d.paymentMfo || "",
@@ -107,12 +103,15 @@ export default function RequisitesTab({ inputStyle, clubId }) {
                 } else {
                     setDataExists(false);
                 }
-            })
-            .catch((err) => {
-                console.error("API Error:", err);
+            } catch (err) {
+                console.error("❌ fetchBankingInfo error:", err);
                 setDataExists(false);
-            });
-    }, [clubId, language]); // 🔥 til o'zgarsa UI qayta render bo'ladi
+            }
+        };
+
+        fetchBankingInfo();
+    }, [clubId, language]);
+
 
     // Inputlar o'zgarishini yozib boradi
     const handleChange = (e) => {
@@ -130,21 +129,13 @@ export default function RequisitesTab({ inputStyle, clubId }) {
 
         const body = {
             ...formData,
-            clubId: clubId,
+            clubId,
             active: true,
         };
 
         try {
-            const res = await fetch("http://backend.gamefit.uz/banking-info", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(body),
-            });
+            const data = await API.saveBankingInfo({ body, accessToken: token });
 
-            const data = await res.json();
             if (data?.success) {
                 alert(t.success);
                 setDataExists(true);
@@ -152,7 +143,7 @@ export default function RequisitesTab({ inputStyle, clubId }) {
                 alert(t.error + ": " + (data.message || "Unknown error"));
             }
         } catch (err) {
-            console.error("POST error:", err);
+            console.error("❌ handleSubmit error:", err);
             alert(t.error);
         }
     };

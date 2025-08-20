@@ -6,6 +6,7 @@ import { BsPlus } from "react-icons/bs";
 import { useLanguage } from "@/app/context/LanguageContext";
 import EditRoomModal from "@/app/components/modals/EditRoomModal";
 import CreateRoomModal from "@/app/components/modals/CreatRoommodal";
+import { API } from "@/config/api";
 
 export default function RoomTable({ clubId }) {
     const { language } = useLanguage();
@@ -57,18 +58,14 @@ export default function RoomTable({ clubId }) {
     }, [clubId]);
 
     const fetchRooms = async () => {
+        setLoading(true);
         try {
             const token = localStorage.getItem("accessToken");
-            const res = await fetch(
-                `http://backend.gamefit.uz/seat-plan/by-club?clubId=${clubId}`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
-            const data = await res.json();
-            if (data.success) setRooms(data.content);
+            const rooms = await API.getRoomsByClub({ clubId, accessToken: token });
+
+            setRooms(rooms);
         } catch (err) {
-            console.error("API error:", err);
+            console.error("❌ fetchRooms error:", err);
         } finally {
             setLoading(false);
         }
@@ -78,24 +75,15 @@ export default function RoomTable({ clubId }) {
     const handleDelete = async (id) => {
         try {
             const token = localStorage.getItem("accessToken");
-            const res = await fetch(
-                `http://backend.gamefit.uz/seat-plan?id=${id}`,
-                {
-                    method: "DELETE",
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
+            const success = await API.deleteSeatPlan({ id, accessToken: token });
 
-            if (res.ok) {
+            if (success) {
                 setRooms((prev) => prev.filter((r) => r.id !== id));
-            } else {
-                console.error("Failed to delete room");
             }
         } catch (err) {
-            console.error("Delete error:", err);
+            console.error("❌ handleDelete error:", err);
         }
     };
-
     // 🔹 Update room after edit
     const handleUpdate = (updatedRoom) => {
         setRooms((prev) =>
